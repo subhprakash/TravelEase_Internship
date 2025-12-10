@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TravelEase - Flight Booking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --color-primary-blue: #3B82F6;
+            --color-gradient-start: #3b82f6;
+            --color-gradient-end: #60a5fa;
+            --mouse-x: 50%;
+            --mouse-y: 50%;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #e0e7ff;
+            background-image: radial-gradient(circle at var(--mouse-x) var(--mouse-y), #bfdbfe 0%, #eff6ff 40%, #e0e7ff 100%);
+            transition: background 0.2s ease-out;
+        }
+        .container { max-width: 1200px; }
+        .gradient-bg-blue { background: linear-gradient(to right, var(--color-gradient-start), var(--color-gradient-end)); }
+        .gradient-card-purple { background: linear-gradient(to right top, #8B5CF6, #EC4899); }
+        .gradient-card-red { background: linear-gradient(to right top, #EF4444, #F59E0B); }
+        .gradient-card-teal { background: linear-gradient(to right top, #14B8A6, #06B6D4); }
+        .main-header { background-color: var(--color-gradient-start); }
+        .btn-blue-gradient {
+            background: linear-gradient(to right, var(--color-gradient-start), var(--color-gradient-end));
+            color: #fff; font-weight: bold; padding: 0.75rem 2rem; border-radius: 9999px;
+            box-shadow: 0 10px 15px -3px rgba(59,130,246,0.1), 0 4px 6px -4px rgba(59,130,246,0.1);
+            transition: all 0.3s;
+        }
+        .btn-blue-gradient:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+         /* NAYA: Cancel Button */
+         .btn-red-gradient {
+            background: linear-gradient(to right, #EF4444, #F59E0B);
+            color: #fff; font-weight: bold; padding: 0.75rem 2rem; border-radius: 9999px;
+            box-shadow: 0 10px 15px -3px rgba(239,68,68,0.1), 0 4px 6px -4px rgba(239,68,68,0.1);
+            transition: all 0.3s;
+        }
+        .flight-item-card {
+            background: #fff; padding: 1.5rem; border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start;
+        }
+        @media (min-width: 768px) { .flight-item-card { flex-direction: row; align-items: center; } }
+        .input-field {
+            margin-top: 0.25rem; display: block; width: 100%;
+            padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem;
+            box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);
+        }
+        input[type="date"].dark-input { background-color: #1f2937; color: #fff; border-color: #4b5563; filter: invert(100%); }
+        @keyframes scroll-x { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        .scroll-container { overflow: hidden; width: 100%; }
+        .scroll-content { display: flex; animation: scroll-x 30s linear infinite; }
+        .scroll-item { flex: 0 0 auto; width: 280px; margin-right: 24px; color: white; padding: 1.5rem; border-radius: 0.75rem; }
+        .seat {
+            width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+            border-radius: 4px; border: 1px solid #9ca3af; cursor: pointer;
+            font-size: 11px; font-weight: 600;
+        }
+        .seat.economy { background-color: #dbeafe; color: #1e3a8a; }
+        .seat.premium { background-color: #d1fae5; color: #065f46; }
+        .seat.business { background-color: #fef9c3; color: #854d0e; }
+        .seat.selected { background-color: #2563eb; color: white; border-color: #1d4ed8; transform: scale(1.1); }
+        .seat.booked { background-color: #e5e7eb; color: #9ca3af; cursor: not-allowed; border-color: #d1d5db; }
+        .seat-row { display: flex; gap: 8px; justify-content: center; }
+        .seat-row .aisle { width: 24px; }
+        .destination-card {
+            padding: 1.5rem; border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
+            color: #fff;
+        }
+        .destination-card h4 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem; }
+         .message-box {
+            display: none; /* hidden by default */
+            padding: 1rem;
+            margin-top: 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+        }
+        .message-success {
+            background-color: #d1fae5; /* green-100 */
+            color: #065f46; /* green-800 */
+            border: 1px solid #6ee7b7; /* green-300 */
+        }
+        .message-error {
+            background-color: #fee2e2; /* red-100 */
+            color: #991b1b; /* red-800 */
+            border: 1px solid #fca5a5; /* red-300 */
+        }
+         .message-info {
+            background-color: #dbeafe; /* blue-100 */
+            color: #1e40af; /* blue-800 */
+            border: 1px solid #93c5fd; /* blue-300 */
+        }
+
+        /* NAYA: CROWDPULSE CSS */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6);
+            padding-top: 50px;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 700px;
+            border-radius: 10px;
+            position: relative;
+        }
+        .close-btn {
+            color: #aaa;
+            position: absolute;
+            top: 10px;
+            right: 25px;
+            font-size: 35px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close-btn:hover, .close-btn:focus {
+            color: black;
+            text-decoration: none;
+        }
+
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <header class="main-header text-white py-4 px-8 shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="#" id="travelEaseLogo" class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity duration-200">
+                <img src="images/travelease_logo.png" alt="TravelEase Logo" class="h-10">
+                <span class="text-3xl font-bold">TravelEase</span>
+            </a>
+            <nav class="text-sm font-semibold space-x-6">
+                <a href="#" class="inline-flex items-center gap-1"><span>24/7 Customer Support</span></a>
+                <a href="#" class="inline-flex items-center gap-1"><span>Secure Payments</span></a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-grow container mx-auto pb-8">
+        <div id="messageBox" class="message-box max-w-4xl mx-auto"></div>
+
+        <section id="homePage" class="current-page">
+            <div class="bg-white p-8 rounded-xl shadow-lg text-center mb-12 mt-10">
+                <h3 class="text-3xl font-semibold text-gray-800 mb-6">Find Your Perfect Flight</h3>
+                
+                <div class="flex justify-center gap-4 mb-6">
+                    <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="tripType" value="oneWay" class="form-radio h-5 w-5 text-blue-600" checked readonly> <span class="text-lg">One Way</span></label>
+                </div>
+                
+                <div class="flex justify-center gap-6 mb-8">
+                    <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="flightType" value="domestic" checked class="form-radio h-5 w-5 text-blue-600"> <span class="text-lg">Domestic</span></label>
+                    <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="flightType" value="international" class="form-radio h-5 w-5 text-blue-600"> <span class="text-lg">International</span></label>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+                    <div><label for="fromDestination" class="block text-left text-sm font-semibold mb-2">From</label><select id="fromDestination" class="input-field"></select></div>
+                    <div><label for="toDestination" class="block text-left text-sm font-semibold mb-2">To</label><select id="toDestination" class="input-field"></select></div>
+                    <div><label for="departureDate" class="block text-left text-sm font-semibold mb-2">Departure Date</label><input type="date" id="departureDate" class="input-field dark-input" required></div>
+                    
+                    <div>
+                        <label for="searchEmail" class="block text-left text-sm font-semibold mb-2">Your Email (for Recs)</label>
+                        <input type="email" id="searchEmail" class="input-field" placeholder="you@example.com">
+                    </div>
+                </div>
+
+                <div class="flex justify-center gap-4 mt-10">
+                    <button id="searchFlightsBtn" class="btn-blue-gradient">Search Flights</button>
+                    
+                    <button type="button" id="smart-trip-button" 
+                            class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-shadow duration-300">
+                        ✨ Get Smart Trip Ideas!
+                    </button>
+                    
+                    <button type="button" id="showCrowdPulseWidget"
+                            class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-shadow duration-300">
+                        🌍 See CrowdPulse
+                    </button>
+                </div>
+
+                <div id="smart-trip-recommendations" class="hidden mt-6 p-6 bg-gray-100 rounded-xl max-w-3xl mx-auto text-left">
+                    <h3 class="text-2xl font-bold mb-4 text-gray-800">Your Smart Trip Suggestions!</h3>
+                    <ul id="recommendations-list" class="list-disc pl-5 space-y-3">
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="bg-white p-8 rounded-xl shadow-lg text-center mb-12">
+                <h3 class="text-3xl font-semibold text-gray-800 mb-6">Cancel a Booking?</h3>
+                <form id="cancelForm" class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
+                    <div>
+                        <label for="cancelBookingRef" class="block text-left text-sm font-semibold mb-2">Booking Reference</label>
+                        <input type="text" id="cancelBookingRef" class="input-field" placeholder="BK-..." required>
+                    </div>
+                    <div>
+                        <label for="cancelEmail" class="block text-left text-sm font-semibold mb-2">Your Email</label>
+                        <input type="email" id="cancelEmail" class="input-field" placeholder="you@example.com" required>
+                    </div>
+                    <div class="md:mt-7">
+                        <button type="submit" id="cancelBookingBtn" class="btn-red-gradient w-full">Cancel Booking</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="mt-12 text-center text-gray-700">
+                <h3 class="text-3xl font-semibold mb-4">Featured Destinations</h3>
+                <p class="text-md mb-8">Discover amazing places with our specially curated flight offers</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <a href="#" class="block transform hover:scale-105 transition-transform duration-200"><div class="destination-card gradient-card-purple h-full"><h4 class="font-bold">New York</h4><p class="text-gray-200 text-sm">The city that never sleeps</p><p class="text-white text-xl font-extrabold mt-4"><span class="line-through text-base text-gray-300 mr-2">From ₹64,800</span>From <span class="text-2xl font-extrabold">₹60,000</span></p><p class="text-gray-300 text-sm">Dates vary</p></div></a>
+                    <a href="#" class="block transform hover:scale-105 transition-transform duration-200"><div class="destination-card gradient-card-red h-full"><h4 class="font-bold">London</h4><p class="text-gray-200 text-sm">Where history meets modern life</p><p class="text-white text-xl font-extrabold mt-4"><span class="line-through text-base text-gray-300 mr-2">From ₹58,000</span>From <span class="text-2xl font-extrabold">₹50,000</span></p><p class="text-gray-300 text-sm">Dates vary</p></div></a>
+                    <a href="#" class="block transform hover:scale-105 transition-transform duration-200"><div class="destination-card gradient-card-teal h-full"><h4 class="font-bold">Dubai</h4><p class="text-gray-200 text-sm">Desert oasis of luxury</p><p class="text-white text-xl font-extrabold mt-4"><span class="line-through text-base text-gray-300 mr-2">From ₹45,500</span>From <span class="text-2xl font-extrabold">₹42,000</span></p><p class="text-gray-300 text-sm">Dates vary</p></div></a>
+                </div>
+            </div>
+
+            <div class="scroll-container mt-16 bg-gray-200 py-6 rounded-xl shadow-inner">
+                <div class="scroll-content">
+                    <div class="scroll-item gradient-card-purple"><h5 class="text-xl font-bold mb-2">Exclusive Offer</h5><p>Save up to 30% on Business Class tickets!</p></div>
+                    <div class="scroll-item gradient-card-red"><h5 class="text-xl font-bold mb-2">New Routes</h5><p>Direct flights to Tokyo and Sydney now available.</p></div>
+                    <div class="scroll-item gradient-card-teal"><h5 class="text-xl font-bold mb-2">Weekend Getaways</h5><p>Special prices on short trips to Goa and Bangkok.</p></div>
+                    <div class="scroll-item gradient-card-purple"><h5 class="text-xl font-bold mb-2">Exclusive Offer</h5><p>Save up to 30% on Business Class tickets!</p></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="flightSelectionPage" class="hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h3 id="flightSelectionTitle" class="text-3xl font-bold text-gray-800">Available Flights</h3>
+                <button id="modifySearchBtn" class="btn-blue-gradient">Modify Search</button>
+            </div>
+            <div id="flightsList" class="space-y-6"></div>
+        </section>
+
+        <section id="paymentServicePage" class="hidden">
+            <h3 class="text-3xl font-bold text-gray-800 mb-6">Review & Payment</h3>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1">
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h4 class="text-2xl font-bold mb-4 border-b pb-3">Your Trip Summary</h4>
+                        <div id="summaryDepartureSection" class="space-y-2"></div>
+                        <div id="summarySeatSection" class="space-y-2 mt-4 border-t pt-4"></div>
+                        <p class="flex justify-between items-center border-t pt-3 font-bold text-xl mt-4"><span>Total Price:</span><span id="summaryTotalPrice" class="text-red-500"></span></p>
+                    </div>
+                </div>
+                <div class="lg:col-span-2 space-y-8">
+                    <div class="bg-white p-8 rounded-xl shadow-lg">
+                        <h4 class="text-2xl font-bold mb-6">Passenger Details</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div><label for="fullName" class="block text-sm font-semibold mb-2">Full Name</label><input type="text" id="fullName" class="input-field" required></div>
+                            <div><label for="email" class="block text-sm font-semibold mb-2">Email Address</label><input type="email" id="email" class="input-field" required></div>
+                        </div>
+                    </div>
+                    <div id="seatSelectionContainer" class="bg-white p-8 rounded-xl shadow-lg">
+                        <h4 class="text-2xl font-bold mb-4">Select Your Seat</h4>
+                        <div class="flex justify-center gap-4 mb-4 text-sm">
+                            <span class="flex items-center gap-2"><div class="w-4 h-4 rounded bg-[#fef9c3] border border-yellow-400"></div> Business</span>
+                            <span class="flex items-center gap-2"><div class="w-4 h-4 rounded bg-[#d1fae5] border border-green-400"></div> Premium</span>
+                            <span class="flex items-center gap-2"><div class="w-4 h-4 rounded bg-[#dbeafe] border border-blue-400"></div> Economy</span>
+                            <span class="flex items-center gap-2"><div class="w-4 h-4 rounded bg-[#e5e7eb] border border-gray-400"></div> Booked</span>
+                        </div>
+                        <div id="seatMap" class="flex flex-col items-center gap-4">
+                            <div id="seatMapSpinner" class="text-center p-4">
+                                <svg class="animate-spin h-8 w-8 text-blue-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <p class="mt-2 text-blue-600 font-medium">Loading available seats...</p>
+                            </div>
+                        </div>
+                        <button id="confirmSeatBtn" class="btn-blue-gradient w-full mt-6">Confirm Seat</button>
+                    </div>
+                    <div id="paymentDetailsContainer" class="bg-white p-8 rounded-xl shadow-lg hidden">
+                        <h4 class="text-2xl font-bold mb-6">Payment Details</h4>
+                        <div class="space-y-6">
+                            <div><label for="cardNumber" class="block text-sm font-semibold mb-2">Card Number</label><input type="text" id="cardNumber" class="input-field" maxlength="16" required></div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div><label for="expiryDate" class="block text-sm font-semibold mb-2">Expiry (MM/YY)</label><input type="text" id="expiryDate" class="input-field" maxlength="5" required></div>
+                                <div><label for="cvv" class="block text-sm font-semibold mb-2">CVV</label><input type="text" id="cvv" class="input-field" maxlength="4" required></div>
+                            </div>
+                        </div>
+                        <div id="paymentStatus" class="mt-6 text-center text-lg font-semibold hidden"></div>
+                        <button id="finalizeBookingBtn" class="btn-blue-gradient w-full mt-8">Finalize Booking & Pay <span id="paymentAmountDisplay"></span></button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div id="bookingConfirmedModal" class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 hidden z-50">
+            <div class="bg-white p-10 rounded-xl shadow-2xl max-w-lg w-full text-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-green-500 mx-auto mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <h4 class="text-3xl font-extrabold text-green-600 mb-3">Booking Confirmed!</h4>
+                <div class="bg-gray-100 p-6 rounded-lg text-left space-y-3 mb-8">
+                    <p><strong>Flights:</strong> <span id="confFlights"></span></p>
+                    <p><strong>Seat:</strong> <span id="confSeat"></span></p>
+                    <p><strong>Booking Reference:</strong> <span id="confRef"></span></p>
+                    <p><strong>Total Paid:</strong> <span id="confPrice"></span></p>
+                    <p><strong>Email Status:</strong> <span id="confEmailStatus"></span></p>
+                </div>
+                <button id="goToHomeBtn" class="btn-blue-gradient">Go to Home</button>
+            </div>
+        </div>
+
+        <div id="crowdPulseModal" class="modal">
+            <div class="modal-content">
+                <span id="closeCrowdPulseBtn" class="close-btn">&times;</span>
+                <div id="crowdPulseWidgetContainer">
+                    </div>
+            </div>
+        </div>
+    </main>
+    
+    <footer class="main-header text-white py-4 px-8 mt-auto">
+        <div class="container mx-auto text-center text-sm"><p>&copy; 2025 TravelEase</p></div>
+    </footer>
+
+    <script>
+        document.addEventListener('mousemove', e => { document.documentElement.style.setProperty('--mouse-x', (e.clientX / window.innerWidth) * 100 + '%'); document.documentElement.style.setProperty('--mouse-y', (e.clientY / window.innerHeight) * 100 + '%'); });
+        
+        // --- Global State ---
+        let allFetchedFlights = [], selectedDepartureFlight = null, selectedSeat = null;
+        let from, to, departureDate, flightType;
+        
+        const seatFees = { business: 1500, premium: 600, economy: 250 };
+        const destinations = { domestic: [ { code: 'DEL', name: 'Delhi' }, { code: 'BOM', name: 'Mumbai' }, { code: 'CCU', name: 'Kolkata' }, { code: 'MAA', name: 'Chennai' }, { code: 'GOI', name: 'Goa' }, { code: 'HYD', name: 'Hyderabad' }], international: [ { code: 'HKT', name: 'Phuket' }, { code: 'SUB', name: 'Juanda' }, { code: 'NRT', name: 'Narita' }, { code: 'HND', name: 'Haneda' }, { code: 'DXB', name: 'Dubai' }, { code: 'SYD', name: 'Sydney' }, { code: 'MEL', name: 'Melbourne' }, { code: 'AKL', name: 'Auckland' }] };
+        
+        const messageBox = document.getElementById('messageBox');
+        const cancelForm = document.getElementById('cancelForm');
+        
+        // NAYA: CROWDPULSE WIDGET URL
+        const CROWDPULSE_URL = 'crowdpulse_widget.html'; // Path to the widget
+
+        // --- API URL FUNCTION ---
+        function getApiUrl(path, port) { 
+            // This is your latest working ALB URL
+            const ALB_URL = "http://travelease-project-ALB-720876672.eu-north-1.elb.amazonaws.com";            
+            return `${ALB_URL}${path}`;
+        }
+
+        function showPage(pageId) { 
+            ['homePage', 'flightSelectionPage', 'paymentServicePage'].forEach(id => document.getElementById(id).classList.add('hidden')); 
+            document.getElementById(pageId).classList.remove('hidden'); 
+            window.scrollTo(0, 0);
+            hideMessage(); 
+        }
+        
+        function formatPrice(price) { return `₹${Number(price).toLocaleString('en-IN')}`; }
+        
+        function updateDestinationDropdowns() {
+            flightType = document.querySelector('input[name="flightType"]:checked').value;
+            const fromDd = document.getElementById('fromDestination'), toDd = document.getElementById('toDestination'); fromDd.innerHTML = ''; toDd.innerHTML = '';
+            const allDests = [...destinations.domestic, ...destinations.international];
+            if (flightType === 'domestic') { populateDropdown(fromDd, destinations.domestic); populateDropdown(toDd, destinations.domestic); } 
+            else { populateDropdown(fromDd, allDests); populateDropdown(toDd, allDests); }
+        }
+        
+        function populateDropdown(dd, opts) { opts.forEach(o => { const el = document.createElement('option'); el.value = o.code; el.textContent = `${o.name} (${o.code})`; dd.appendChild(el); }); }
+        
+        function searchFlights() {
+            flightType = document.querySelector('input[name="flightType"]:checked').value;
+            from = document.getElementById('fromDestination').value; 
+            to = document.getElementById('toDestination').value;
+            departureDate = document.getElementById('departureDate').value; 
+            
+            selectedDepartureFlight = null; 
+            selectedSeat = null;
+            
+            if (!departureDate) { 
+                showMessage('Please select a Departure Date.', 'error'); 
+                return; 
+            }
+
+            document.getElementById('flightSelectionTitle').textContent = "Select Your Departure Flight";
+            
+            // Flight Service ko call karein
+            const apiUrl = `${getApiUrl('/api/flights', 5002)}?type=${flightType}&from=${from}&to=${to}&date=${departureDate}`;
+            const flightsList = document.getElementById('flightsList'); 
+            flightsList.innerHTML = `<p class="text-center text-xl text-blue-600">Searching...</p>`;
+            
+            fetch(apiUrl)
+                .then(res => res.json())
+                .then(data => { 
+                    allFetchedFlights = data.flights || []; 
+                    renderFlights(allFetchedFlights); 
+                    showPage('flightSelectionPage'); 
+                })
+                .catch(err => { 
+                    console.error(err); 
+                    flightsList.innerHTML = `<p class="text-center text-xl text-red-500">Could not fetch flights. Is the server running?</p>`; 
+                });
+        }
+        
+        function renderFlights(flights) {
+            const flightsList = document.getElementById('flightsList');
+            flightsList.innerHTML = '';
+            if (flights.length === 0) { flightsList.innerHTML = '<p class="text-center text-lg text-gray-500">No flights found.</p>'; return; }
+            flights.forEach(flight => flightsList.appendChild(createFlightCard(flight)));
+        }
+        
+        function createFlightCard(flight) {
+            const card = document.createElement('div'); card.className = 'flight-item-card'; 
+            const flightData = JSON.stringify(flight).replace(/"/g, '&quot;');
+            card.innerHTML = `<div><h4 class="text-xl font-bold">${flight.name} - ${flight.flightNumber}</h4><p class="font-semibold">${flight.departureTime} → ${flight.arrivalTime} (${flight.duration})</p><p class="text-sm text-gray-500">${flight.route}</p></div><div class="mt-4 md:mt-0 text-right"><p class="text-2xl font-extrabold text-red-500">${formatPrice(flight.price)}</p><button data-flight='${flightData}' class="btn-blue-gradient mt-2 select-flight-btn">Select</button></div>`;
+            card.querySelector('.select-flight-btn').addEventListener('click', handleFlightSelection); return card;
+        }
+        
+        function handleFlightSelection(event) {
+            selectedDepartureFlight = JSON.parse(event.currentTarget.dataset.flight);
+            updatePaymentSummary(); 
+            renderSeatMap(); 
+            resetPaymentPage(); 
+            showPage('paymentServicePage'); 
+        }
+        
+        async function renderSeatMap() {
+            const seatMap = document.getElementById('seatMap');
+            const spinner = document.getElementById('seatMapSpinner');
+            seatMap.innerHTML = ''; 
+            spinner.style.display = 'block'; 
+            
+            // Flight ID (jo seat table mein check hogi)
+            const flight_id = `${selectedDepartureFlight.flightNumber}_${departureDate}`;
+            let bookedSeats = [];
+
+            try {
+                // Booking Service se booked seats laayein
+                const response = await fetch(`${getApiUrl('/api/get_seats', 5000)}?flight_id=${flight_id}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    bookedSeats = data.booked_seats || [];
+                    console.log("Booked seats for " + flight_id + ":", bookedSeats);
+                } else {
+                    console.error("Could not fetch booked seats.");
+                    showMessage("Could not load seat map. Please try again.", "error");
+                }
+            } catch (e) {
+                console.error("Error fetching seats:", e);
+                showMessage("Could not load seat map. Please try again.", "error");
+            }
+            
+            spinner.style.display = 'none'; 
+
+            const seatLayout = [
+                { rows: [1, 2], layout: ['A', 'B', '', 'C', 'D'], class: 'business' },
+                { rows: [3, 4, 5], layout: ['A', 'B', 'C', '', 'D', 'E', 'F'], class: 'premium' },
+                { rows: [6, 7, 8, 9, 10, 11, 12], layout: ['A', 'B', 'C', '', 'D', 'E', 'F'], class: 'economy' }
+            ];
+            
+            seatLayout.forEach(section => {
+                section.rows.forEach(rowNum => {
+                    const row = document.createElement('div'); row.className = 'seat-row';
+                    section.layout.forEach(letter => {
+                        if (letter === '') { const aisle = document.createElement('div'); aisle.className = 'aisle'; row.appendChild(aisle); return; }
+                        
+                        const seat = document.createElement('div'); 
+                        const seatId = `${rowNum}${letter}`;
+                        seat.id = `seat-${seatId}`; seat.textContent = seatId;
+                        
+                        const isBooked = bookedSeats.includes(seatId);
+                        seat.className = isBooked ? `seat booked` : `seat ${section.class}`;
+                        
+                        if (!isBooked) { 
+                            seat.dataset.seatId = seatId; 
+                            seat.dataset.seatClass = section.class; 
+                            seat.dataset.seatPrice = seatFees[section.class]; 
+                            seat.addEventListener('click', () => selectSeat(seatId, section.class, seatFees[section.class])); 
+                        }
+                        row.appendChild(seat);
+                    });
+                    seatMap.appendChild(row);
+                });
+            });
+        }
+        
+        function selectSeat(seatId, seatClass, seatPrice) {
+            if (selectedSeat) {
+                const oldSeatEl = document.getElementById(`seat-${selectedSeat.id}`);
+                if (oldSeatEl) { oldSeatEl.classList.remove('selected'); oldSeatEl.classList.add(selectedSeat.class); }
+            }
+            const newSeatEl = document.getElementById(`seat-${seatId}`);
+            newSeatEl.classList.remove(seatClass);
+            newSeatEl.classList.add('selected');
+            selectedSeat = { id: seatId, class: seatClass, price: seatPrice };
+            console.log("Selected seat:", selectedSeat);
+        }
+        
+        function updatePaymentSummary() {
+            let totalPrice = 0; 
+            const depSection = document.getElementById('summaryDepartureSection');
+            const seatSection = document.getElementById('summarySeatSection');
+            
+            if (selectedDepartureFlight) { 
+                totalPrice += selectedDepartureFlight.price; 
+                depSection.innerHTML = `<h5 class="font-bold">Departure</h5><p class="flex justify-between"><span>${selectedDepartureFlight.name} (${selectedDepartureFlight.route})</span><span class="font-semibold">${formatPrice(selectedDepartureFlight.price)}</span></p>`; 
+            }
+            
+            if (selectedSeat) { 
+                totalPrice += selectedSeat.price; 
+                seatSection.innerHTML = `<h5 class="font-bold">Seat Selection</h5><p class="flex justify-between"><span>Seat ${selectedSeat.id} (${selectedSeat.class})</span><span class="font-semibold">${formatPrice(selectedSeat.price)}</span></p>`; 
+                seatSection.classList.remove('hidden'); 
+            } else { 
+                seatSection.innerHTML = ''; 
+                seatSection.classList.add('hidden'); 
+            }
+            
+            document.getElementById('summaryTotalPrice').textContent = formatPrice(totalPrice); 
+            document.getElementById('paymentAmountDisplay').textContent = formatPrice(totalPrice);
+        }
+        
+        function resetPaymentPage() {
+            document.getElementById('seatSelectionContainer').classList.remove('hidden');
+            document.getElementById('paymentDetailsContainer').classList.add('hidden');
+            document.getElementById('paymentStatus').classList.add('hidden');
+        }
+        
+        async function finalizeBooking() {
+            const fullName = document.getElementById('fullName').value;
+            const email = document.getElementById('email').value;
+            const cardNumber = document.getElementById('cardNumber').value;
+            const finalizeBtn = document.getElementById('finalizeBookingBtn');
+            
+            if (!fullName || !email || !cardNumber || cardNumber.length < 16) { 
+                showMessage('Please fill all passenger and valid payment details.', 'error'); 
+                return; 
+            }
+            if (!selectedSeat) {
+                showMessage('Please go back and select a seat.', 'error');
+                return;
+            }
+            
+            let totalPrice = selectedDepartureFlight.price + selectedSeat.price;
+            let flightId = `${selectedDepartureFlight.flightNumber}_${departureDate}`;
+            
+            const paymentData = { 
+                amount: totalPrice, 
+                card_number: cardNumber, 
+                email: email,
+                flight_id: flightId,
+                flight_details: `${selectedDepartureFlight.name} (${selectedDepartureFlight.route})`,
+                seat_number: selectedSeat.id
+            };
+            
+            const paymentStatusEl = document.getElementById('paymentStatus');
+            paymentStatusEl.textContent = 'Processing Payment...';
+            paymentStatusEl.className = 'mt-6 text-center text-lg font-semibold text-blue-600';
+            paymentStatusEl.classList.remove('hidden');
+            finalizeBtn.disabled = true;
+            
+            try {
+                // --- STEP 1: PAYMENT ---
+                const paymentResponse = await fetch(getApiUrl('/api/payment', 5003), { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(paymentData) 
+                });
+                
+                const paymentResult = await paymentResponse.json();
+                if (!paymentResponse.ok) {
+                    throw new Error(paymentResult.message || 'Payment Failed');
+                }
+                
+                paymentStatusEl.textContent = 'Payment Successful! Finalizing booking...';
+                paymentStatusEl.className = 'mt-6 text-center text-lg font-semibold text-green-600';
+
+                // --- STEP 2: BOOKING ---
+                const bookingData = { 
+                    flight_id: paymentResult.flight_id, 
+                    flight_details: paymentResult.flight_details, // <<< FIX: ENSURES THE FIELD IS SENT TO BOOKING SERVICE
+                    seat_number: paymentResult.seat_number, 
+                    amount_paid: totalPrice, 
+                    amount:totalPrice,
+                    price:totalPrice,
+                    transaction_id: paymentResult.transaction_id, 
+                    user_email: paymentResult.user_email,
+                    flight: paymentResult.flight_details // Original booking service compatibility
+                };
+                
+                const bookingResponse = await fetch(getApiUrl('/book', 5000), { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(bookingData) 
+                });
+                
+                const bookingResult = await bookingResponse.json();
+                if (!bookingResponse.ok) {
+                    if(bookingResponse.status === 409) {
+                        throw new Error(bookingResult.message || 'That seat was just taken. Please select another.');
+                    }
+                    throw new Error(bookingResult.message || 'Booking Failed');
+                }
+                
+                // --- STEP 3: SUCCESS ---
+                document.getElementById('confFlights').textContent = bookingData.flight_details;
+                document.getElementById('confSeat').textContent = bookingData.seat_number;
+                document.getElementById('confRef').textContent = bookingResult.booking_reference; 
+                document.getElementById('confPrice').textContent = formatPrice(bookingData.price);
+                document.getElementById('confEmailStatus').textContent = bookingResult.email_status; 
+                document.getElementById('bookingConfirmedModal').classList.remove('hidden');
+                
+            } catch (err) {
+                console.error(err); 
+                paymentStatusEl.textContent = `Error: ${err.message}`;
+                paymentStatusEl.className = 'mt-6 text-center text-lg font-semibold text-red-600';
+                
+                if (err.message.includes("seat")) {
+                    document.getElementById('seatSelectionContainer').classList.remove('hidden');
+                    document.getElementById('paymentDetailsContainer').classList.add('hidden');
+                    renderSeatMap(); 
+                }
+            } finally {
+                finalizeBtn.disabled = false;
+            }
+        }
+        
+        function showMessage(message, type = 'info') {
+            messageBox.innerHTML = message;
+            messageBox.className = 'message-box'; 
+            if (type === 'success') {
+                messageBox.classList.add('message-success');
+            } else if (type === 'error') {
+                messageBox.classList.add('message-error');
+            } else {
+                 messageBox.classList.add('message-info');
+            }
+            messageBox.style.display = 'block';
+            window.scrollTo(0, 0); 
+        }
+        function hideMessage() {
+            messageBox.style.display = 'none';
+        }
+        
+        async function handleCancelBooking(e) {
+            e.preventDefault();
+            hideMessage();
+            const bookingRef = document.getElementById('cancelBookingRef').value;
+            const email = document.getElementById('cancelEmail').value;
+            const cancelBtn = document.getElementById('cancelBookingBtn');
+
+            if (!bookingRef || !email) {
+                showMessage("Please fill in both Booking Reference and Email.", "error");
+                return;
+            }
+            
+            const cancelData = {
+                booking_reference: bookingRef,
+                user_email: email
+            };
+            
+            showMessage("Processing cancellation...", "info");
+            cancelBtn.disabled = true;
+            
+            try {
+                const response = await fetch(`${getApiUrl('/cancel', 5000)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(cancelData)
+                });
+                
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.message || "Cancellation request failed.");
+                }
+                
+                // Assuming cancel API returns refund_amount, if not, adjust text
+                const refundAmount = result.refund_amount ? formatPrice(result.refund_amount) : "A refund";
+                showMessage(`Booking ${result.booking_reference} cancelled. ${refundAmount} will be processed.`, "success");
+                cancelForm.reset();
+                
+            } catch (err) {
+                console.error(err);
+                showMessage(err.message, "error");
+            } finally {
+                cancelBtn.disabled = false;
+            }
+        }
+
+        // --- SMART TRIP FUNCTIONS ---
+        function displayRecommendations(recommendations) {
+            const list = document.getElementById('recommendations-list');
+            const box = document.getElementById('smart-trip-recommendations');
+            list.innerHTML = ''; 
+
+            if (recommendations && recommendations.length > 0) {
+                recommendations.forEach(rec => {
+                    const li = document.createElement('li');
+                    li.className = 'text-gray-700';
+                    li.textContent = `[${rec.suggestion_type}] ${rec.name}: ${rec.description} (Approx: ₹${rec.price})`;
+                    list.appendChild(li);
+                });
+                box.classList.remove('hidden'); 
+            } else {
+                list.innerHTML = '<li>No special recommendations found for this trip.</li>';
+                box.classList.remove('hidden');
+            }
+        }
+
+        async function fetchSmartTripRecommendations() {
+            console.log("Smart Trip button clicked!");
+            hideMessage();
+
+            // Get the selected "To" option text, then extract the code between parentheses e.g. "Chennai (MAA)"
+            const toDropdown = document.getElementById('toDestination');
+            const toText = toDropdown?.options[toDropdown.selectedIndex]?.text || '';
+            const match = toText.match(/\(([^)]+)\)/);    // grabs text inside parentheses
+            const destination_key = match ? match[1] : '';   // e.g. MAA
+
+            const user_email = document.getElementById('searchEmail')?.value?.trim() || '';
+            const start_date = document.getElementById('departureDate')?.value?.trim() || null;
+
+            if (!user_email) {
+                showMessage('Please enter your email address to get smart recommendations.', 'error');
+                return;
+            }
+            if (!destination_key) {
+                showMessage('Please select a "To" destination first.', 'error');
+                return;
+            }
+
+            const apiUrl = getApiUrl('/smart-trip', 5000);
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        destination_code: destination_key,
+                        user_email: user_email,
+                        start_date: start_date || null,
+                        end_date: null
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Could not get recommendations');
+
+                displayRecommendations(data.recommendations);
+            } catch (error) {
+                console.error('Fetch error:', error);
+                showMessage(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        // --- NAYA: CROWDPULSE WIDGET FUNCTION ---
+        async function showCrowdPulseWidget() {
+            const modal = document.getElementById('crowdPulseModal');
+            const container = document.getElementById('crowdPulseWidgetContainer');
+            
+            // Get the 'to' destination code
+            const toDropdown = document.getElementById('toDestination');
+            const toText = toDropdown?.options[toDropdown.selectedIndex]?.text || '';
+            const match = toText.match(/\(([^)]+)\)/);
+            const destination_key = match ? match[1] : null;
+
+            if (!destination_key) {
+                showMessage("Please select a 'To' destination to see CrowdPulse data.", 'error');
+                return;
+            }
+
+            container.innerHTML = '<p class="text-center text-blue-600">Loading CrowdPulse...</p>';
+            modal.style.display = 'block';
+            hideMessage();
+
+            try {
+                const response = await fetch(CROWDPULSE_URL);
+                if (!response.ok) throw new Error('Could not load CrowdPulse widget. (Is crowdpulse_widget.html in the S3 bucket?)');
+                
+                const widgetHtml = await response.text();
+                container.innerHTML = widgetHtml;
+                
+                // --- FIX IS HERE ---
+                // The 'initCrowdPulse' function is now part of this main script,
+                // so this 'if' statement will pass.
+                if (window.initCrowdPulse) {
+                    window.initCrowdPulse(container, getApiUrl, destination_key);
+                } else {
+                    // This error should not happen anymore
+                    console.error("initCrowdPulse function not found in widget. Widget may not be interactive.");
+                }
+
+            } catch (err) {
+                container.innerHTML = `<p class="text-center text-red-500">Error: ${err.message}</p>`;
+            }
+        }
+
+
+        // --- 🟢 SCRIPT MOVED HERE 🟢 ---
+        // This function used to be in crowdpulse_widget.html
+        // We moved it here so it runs when index.html loads.
+        window.initCrowdPulse = (container, getApiUrl, destination_code) => {
+            
+            // This endpoint is from your backend code.
+            const API_ENDPOINT = "http://travelease-project-ALB-720876672.eu-north-1.elb.amazonaws.com";
+
+            const titleEl = container.querySelector('#cp-widget-title');
+            const loaderEl = container.querySelector('#cp-widget-loader');
+            const errorEl = container.querySelector('#cp-widget-error');
+            const contentEl = container.querySelector('#cp-widget-content');
+            const socialPostsContainer = container.querySelector('#cp-social-posts-container');
+            const videoListContainer = container.querySelector('#cp-video-list-container');
+
+            // 1. Helper function to show errors
+            function showError(message) {
+                titleEl.textContent = 'CrowdPulse Error';
+                loaderEl.style.display = 'none';
+                contentEl.style.display = 'none';
+                errorEl.textContent = message;
+                errorEl.style.display = 'block';
+            }
+
+            // 2. Helper function to render social posts
+            function renderSocialPosts(posts) {
+                if (!posts || posts.length === 0) {
+                    socialPostsContainer.innerHTML = '<p>No recent social media posts found.</p>';
+                    return;
+                }
+                socialPostsContainer.innerHTML = ''; // Clear
+                posts.forEach(post => {
+                    const postEl = document.createElement('div');
+                    postEl.className = 'cp-post-card';
+                    postEl.innerHTML = `
+                        <p>"${post.text}"</p>
+                        <div class="cp-post-source">${post.source} - ${post.sentiment}</div>
+                    `;
+                    socialPostsContainer.appendChild(postEl);
+                });
+            }
+
+            // 3. Helper function to render videos
+            function renderVideos(videos) {
+                if (!videos || videos.length === 0) {
+                    videoListContainer.innerHTML = '<p>No recent vlogs found.</p>';
+                    return;
+                }
+                videoListContainer.innerHTML = ''; // Clear
+                videos.forEach(video => {
+                    const videoEl = document.createElement('div');
+                    videoEl.className = 'cp-video-card';
+                    videoEl.innerHTML = `
+                        <a href="${video.url}" target="_blank" rel="noopener noreferrer">
+                            <img src="${video.thumbnail}" alt="Video thumbnail">
+                            <div class="cp-video-title">${video.title}</div>
+                        </a>
+                    `;
+                    videoListContainer.appendChild(videoEl);
+                });
+            }
+
+            // 4. Main function to fetch data and render
+            async function loadCrowdPulseData() {
+                if (!destination_code) {
+                    showError('No destination selected.');
+                    return;
+                }
+
+                // Use the getApiUrl function passed from the parent (which is this file!)
+                const apiUrl = typeof getApiUrl === 'function' 
+                    ? getApiUrl(`/api/crowdpulse/${destination_code}`, 5010)
+                    : `${API_ENDPOINT}/api/crowdpulse/${destination_code}`;
+
+                try {
+                    titleEl.textContent = `CrowdPulse for ${destination_code}`;
+                    loaderEl.style.display = 'block';
+                    contentEl.style.display = 'none';
+                    errorEl.style.display = 'none';
+
+                    const response = await fetch(apiUrl);
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(data.message || 'Failed to fetch CrowdPulse data.');
+                    }
+
+                    // Render content
+                    renderSocialPosts(data.social_media_posts);
+                    renderVideos(data.youtube_videos);
+
+                    // Show content
+                    loaderEl.style.display = 'none';
+                    contentEl.style.display = 'block';
+
+                } catch (err) {
+                    console.error('Error in CrowdPulse widget:', err);
+                    showError(err.message);
+                }
+            }
+
+            // 5. Run the fetch
+            loadCrowdPulseData();
+        };
+
+
+        // --- Event Listeners ---
+        document.addEventListener('DOMContentLoaded', () => {
+            updateDestinationDropdowns();
+            document.querySelectorAll('input[name="flightType"]').forEach(r => r.addEventListener('change', updateDestinationDropdowns));
+            
+            document.getElementById('searchFlightsBtn').addEventListener('click', () => {
+                hideMessage();
+                searchFlights();
+            });
+            document.getElementById('modifySearchBtn').addEventListener('click', () => {
+                hideMessage();
+                showPage('homePage');
+            });
+            document.getElementById('confirmSeatBtn').addEventListener('click', () => { 
+                if(!selectedSeat) { 
+                    showMessage('Please select a seat.', 'error'); 
+                    return; 
+                } 
+                hideMessage();
+                updatePaymentSummary(); 
+                document.getElementById('seatSelectionContainer').classList.add('hidden'); 
+                document.getElementById('paymentDetailsContainer').classList.remove('hidden'); 
+            });
+            document.getElementById('finalizeBookingBtn').addEventListener('click', finalizeBooking);
+            document.getElementById('goToHomeBtn').addEventListener('click', () => { 
+                document.getElementById('bookingConfirmedModal').classList.add('hidden'); 
+                showPage('homePage'); 
+                document.getElementById('departureDate').value = '';
+                document.getElementById('searchEmail').value = ''; 
+            });
+            document.getElementById('travelEaseLogo').addEventListener('click', (e) => { 
+                e.preventDefault(); 
+                hideMessage();
+                showPage('homePage'); 
+            });
+            
+            cancelForm.addEventListener('submit', handleCancelBooking);
+            
+            document.getElementById('smart-trip-button').addEventListener('click', fetchSmartTripRecommendations);
+            
+            // NAYA: CROWDPULSE LISTENERS
+            document.getElementById('showCrowdPulseWidget').addEventListener('click', showCrowdPulseWidget);
+            document.getElementById('closeCrowdPulseBtn').addEventListener('click', () => {
+                document.getElementById('crowdPulseModal').style.display = 'none';
+                document.getElementById('crowdPulseWidgetContainer').innerHTML = ''; // Clear content
+            });
+            
+             document.getElementById('departureDate').min = new Date().toISOString().split('T')[0];
+        });
+    </script>
+</body>
+</html>
